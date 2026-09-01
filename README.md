@@ -28,7 +28,7 @@ márgenes y costos reales del menú.
 
 ```bash
 npm install
-cp .env.example .env      # pegá tu DEEPSEEK_API_KEY
+cp .env.example .env      # pegá tu OPENROUTER_API_KEY
 npm run dev               # http://localhost:5173
 ```
 
@@ -45,7 +45,7 @@ vercel dev
 
 1. vercel.com → Add New → Project → importá el repo
 2. Framework: **Vite** (lo detecta solo)
-3. Settings → Environment Variables → agregá `DEEPSEEK_API_KEY`
+3. Settings → Environment Variables → agregá `OPENROUTER_API_KEY`
 4. Deploy
 
 Para restringirlo al equipo: Settings → Deployment Protection → Password

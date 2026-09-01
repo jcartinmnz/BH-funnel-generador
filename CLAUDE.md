@@ -23,12 +23,13 @@ src/
   App.jsx                  orquestador: estado + navegación entre vistas
   data/catalogo.js         menú 2026 (precio, margen, clasificación)
   data/publicos.js         públicos, franjas, objetivos, sucursales
+  data/modelos.js          modelos permitidos (lista blanca, la valida el server)
   lib/economia.js          TODA la matemática. Determinista, sin IA.
   lib/api.js               llamadas al endpoint /api/generar
   lib/storage.js           persistencia del historial
   components/              UI dividida por sección
 api/
-  generar.js               función serverless: habla con la API de DeepSeek
+  generar.js               función serverless: habla con OpenRouter
 ```
 
 ## Reglas del proyecto
@@ -39,7 +40,7 @@ api/
    ROI", esa es la respuesta incorrecta.
 
 2. **La API key jamás toca el navegador.** Solo se lee en `api/generar.js`
-   vía `process.env.DEEPSEEK_API_KEY`. Si aparece en `src/`, es un bug de
+   vía `process.env.OPENROUTER_API_KEY`. Si aparece en `src/`, es un bug de
    seguridad.
 
 3. **Márgenes reales, no inventados.** Los valores de `catalogo.js` vienen de
@@ -53,6 +54,12 @@ api/
 5. **Sin benchmarks inventados.** No pongas tasas de conversión "esperadas"
    como si fueran datos. Las primeras campañas son la línea base.
 
+6. **El modelo se elige de una lista blanca.** `data/modelos.js` es la única
+   fuente: la UI arma el selector con ella y `api/generar.js` valida contra
+   ella. No aceptes un slug arbitrario del navegador — la app es pública y
+   sería cuota ajena. Para agregar un modelo, copiá el slug de la URL en
+   openrouter.ai; no lo escribas de memoria.
+
 ## Comandos
 
 ```bash
@@ -61,7 +68,7 @@ npm run dev        # http://localhost:5173
 npm run build
 ```
 
-Para desarrollo local necesitás `.env` con `DEEPSEEK_API_KEY`. Copiá
+Para desarrollo local necesitás `.env` con `OPENROUTER_API_KEY`. Copiá
 `.env.example`. La función de `api/` corre en Vercel; en local usá
 `vercel dev` si querés probar la generación de punta a punta.
 

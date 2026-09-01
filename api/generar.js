@@ -1,9 +1,12 @@
 /**
  * Función serverless (Vercel). Único lugar donde vive la API key.
- * POST /api/generar  { tipo: "contenido" | "flujo", datos: {...} }
+ * POST /api/generar  { tipo, datos, modelo? }
  *
- * Usa DeepSeek V4, que expone una API compatible con OpenAI.
+ * Habla con OpenRouter, que expone una API compatible con OpenAI y sirve
+ * de puente a los modelos de varios proveedores.
  */
+
+import { MODELO_POR_DEFECTO, modeloPermitido } from "../src/data/modelos.js";
 
 const VOZ = `
 MARCA — Bread House Bistró & Café (Costa Rica). Posicionamiento "chic accesible".
@@ -25,11 +28,6 @@ FUNNEL A GENERAR:
 - Franja: ${d.franja} · Sucursal: ${d.sucursal} · Código: ${d.codigo}
 `;
 }
-
-// v4-pro razona antes de responder y es el mas lento. Si las generaciones
-// se pasan del limite de tiempo de la funcion, poner DEEPSEEK_MODEL en
-// deepseek-v4-flash desde Vercel: no requiere tocar codigo.
-const MODELO = process.env.DEEPSEEK_MODEL || "deepseek-v4-pro";
 
 const PROMPTS = {
   contenido: (d) => `${contexto(d)}
@@ -58,29 +56,38 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Solo POST" });
   }
 
-  const key = process.env.DEEPSEEK_API_KEY;
+  const key = process.env.OPENROUTER_API_KEY;
   if (!key) {
-    return res.status(500).json({ error: "Falta DEEPSEEK_API_KEY en el entorno" });
+    return res.status(500).json({ error: "Falta OPENROUTER_API_KEY en el entorno" });
   }
 
-  const { tipo, datos } = req.body || {};
+  const { tipo, datos, modelo } = req.body || {};
   const armar = PROMPTS[tipo];
   if (!armar) {
     return res.status(400).json({ error: "tipo debe ser 'contenido' o 'flujo'" });
   }
 
+  // El navegador puede elegir modelo, pero solo de la lista blanca: la app
+  // es publica y sin esto cualquiera podria pedir el modelo mas caro.
+  if (modelo && !modeloPermitido(modelo)) {
+    return res.status(400).json({ error: `Modelo no permitido: ${modelo}` });
+  }
+  const elegido = modelo || MODELO_POR_DEFECTO;
+
   try {
-    const r = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${key}`,
+        // OpenRouter los usa para atribuir el trafico de la app.
+        "HTTP-Referer": "https://bh-funnel-generador.vercel.app",
+        "X-Title": "Bread House · Generador de funnels",
       },
       body: JSON.stringify({
-        model: MODELO,
-        // v4-pro razona antes de responder y ese razonamiento consume tokens
-        // del mismo presupuesto, asi que el techo va holgado para que el JSON
-        // no salga cortado a la mitad.
+        model: elegido,
+        // Holgado a proposito: los modelos que razonan gastan tokens antes
+        // de escribir, y con un techo corto el JSON sale truncado.
         max_tokens: 4000,
         messages: [{ role: "user", content: armar(datos) }],
       }),
@@ -88,8 +95,8 @@ export default async function handler(req, res) {
 
     if (!r.ok) {
       const detalle = await r.text();
-      console.error(`DeepSeek respondio ${r.status}: ${detalle}`);
-      return res.status(502).json({ error: "Error de la API de DeepSeek", detalle });
+      console.error(`OpenRouter respondio ${r.status} con ${elegido}: ${detalle}`);
+      return res.status(502).json({ error: "Error de la API de OpenRouter", detalle });
     }
 
     const data = await r.json();
@@ -101,8 +108,8 @@ export default async function handler(req, res) {
       .trim();
 
     if (!texto) {
-      console.error("DeepSeek no devolvio contenido:", JSON.stringify(data));
-      return res.status(502).json({ error: "DeepSeek no devolvió contenido" });
+      console.error("OpenRouter no devolvio contenido:", JSON.stringify(data));
+      return res.status(502).json({ error: "El modelo no devolvió contenido" });
     }
 
     return res.status(200).json(JSON.parse(texto));

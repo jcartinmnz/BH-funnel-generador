@@ -6,6 +6,7 @@ import {
 } from "./lib/economia.js";
 import { leerHistorial, guardarHistorial } from "./lib/storage.js";
 import { generarFunnel } from "./lib/api.js";
+import { MODELO_POR_DEFECTO } from "./data/modelos.js";
 import Formulario from "./components/Formulario.jsx";
 import Resultado from "./components/Resultado.jsx";
 import Historial from "./components/Historial.jsx";
@@ -38,6 +39,7 @@ export default function App() {
   const [sucursal, setSucursal] = useState("Escazú");
   const [franja, setFranja] = useState("Social 6–8pm");
   const [pauta, setPauta] = useState(10000);
+  const [modelo, setModelo] = useState(MODELO_POR_DEFECTO);
   const [costoContenido, setCostoContenido] = useState(5000);
 
   const [cargando, setCargando] = useState(false);
@@ -83,10 +85,12 @@ export default function App() {
         edadMin, edadMax,
         intereses: intereses || publico.intereses,
         franja, sucursal, codigo,
-      });
+      }, modelo);
       setFunnel(r);
-    } catch {
-      setError("No se pudo generar el funnel. Volvé a intentarlo.");
+    } catch (e) {
+      setError(e.message
+        ? `No se pudo generar el funnel — ${e.message}`
+        : "No se pudo generar el funnel. Volvé a intentarlo.");
     } finally {
       setCargando(false);
     }
@@ -169,7 +173,7 @@ ${funnel.checklist.map((c, i) => `${i + 1}. ${c}`).join("\n")}`;
   const campos = {
     nombrePromo, objetivo, articulos, usarPrecioPromo, precioPromo, publicoId,
     publicoCustom, intereses, edadMin, edadMax, temperatura, sucursal, franja,
-    pauta, costoContenido,
+    pauta, costoContenido, modelo,
   };
   const set = {
     nombrePromo: setNombrePromo, objetivo: setObjetivo, articulos: setArticulos,
@@ -177,7 +181,7 @@ ${funnel.checklist.map((c, i) => `${i + 1}. ${c}`).join("\n")}`;
     publicoId: setPublicoId, publicoCustom: setPublicoCustom, intereses: setIntereses,
     edadMin: setEdadMin, edadMax: setEdadMax, temperatura: setTemperatura,
     sucursal: setSucursal, franja: setFranja, pauta: setPauta,
-    costoContenido: setCostoContenido,
+    costoContenido: setCostoContenido, modelo: setModelo,
   };
 
   return (

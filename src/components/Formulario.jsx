@@ -1,6 +1,7 @@
 import React from "react";
 import { CATALOGO } from "../data/catalogo.js";
 import { OBJETIVOS, PUBLICOS, TEMPERATURAS, FRANJAS, SUCURSALES } from "../data/publicos.js";
+import { MODELOS } from "../data/modelos.js";
 import { crc } from "../lib/economia.js";
 
 /** Todos los controles de entrada del funnel. */
@@ -211,6 +212,21 @@ export default function Formulario({ f, set, eco, alerta, onGenerar, cargando })
             Margen por promo {crc(eco.gpPromo)}<br />
             {f.articulos.length} artículo{f.articulos.length !== 1 ? "s" : ""} · {f.franja}
           </div>
+        </div>
+      </div>
+
+      {/* Modelo que redacta */}
+      <div style={{ marginBottom: 12 }}>
+        <div className="cejilla" style={{ color: "var(--gris)", marginBottom: 6 }}>
+          Modelo que redacta
+        </div>
+        <select className="campo" value={f.modelo} onChange={(e) => set.modelo(e.target.value)}>
+          {MODELOS.map((m) => (
+            <option key={m.id} value={m.id}>{m.n}</option>
+          ))}
+        </select>
+        <div style={{ fontSize: 11, color: "var(--gris)", marginTop: 6, lineHeight: 1.6 }}>
+          {MODELOS.find((m) => m.id === f.modelo)?.desc}
         </div>
       </div>
 
