@@ -79,6 +79,7 @@ export default async function handler(req, res) {
 
     if (!r.ok) {
       const detalle = await r.text();
+      console.error(`Anthropic respondio ${r.status}: ${detalle}`);
       return res.status(502).json({ error: "Error de la API de Anthropic", detalle });
     }
 
@@ -91,6 +92,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json(JSON.parse(texto));
   } catch (e) {
+    console.error("Fallo en /api/generar:", e);
     return res.status(500).json({ error: "No se pudo generar", detalle: String(e) });
   }
 }
