@@ -63,13 +63,20 @@ export default async function handler(req, res) {
   }
 
   try {
+    const headers = {
+      "Content-Type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+    };
+
+    // Las API keys ligadas a identidad exigen declarar en que workspace
+    // actua el request. Una key normal no lo necesita y el header se omite.
+    const workspace = process.env.ANTHROPIC_WORKSPACE_ID;
+    if (workspace) headers["anthropic-workspace-id"] = workspace;
+
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-      },
+      headers,
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
         max_tokens: 1500,
