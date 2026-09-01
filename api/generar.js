@@ -1,6 +1,8 @@
 /**
  * Función serverless (Vercel). Único lugar donde vive la API key.
  * POST /api/generar  { tipo: "contenido" | "flujo", datos: {...} }
+ *
+ * Usa DeepSeek V4, que expone una API compatible con OpenAI.
  */
 
 const VOZ = `
@@ -23,6 +25,8 @@ FUNNEL A GENERAR:
 - Franja: ${d.franja} · Sucursal: ${d.sucursal} · Código: ${d.codigo}
 `;
 }
+
+const MODELO = "deepseek-v4-pro";
 
 const PROMPTS = {
   contenido: (d) => `${contexto(d)}
@@ -51,9 +55,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Solo POST" });
   }
 
-  const key = process.env.ANTHROPIC_API_KEY;
+  const key = process.env.DEEPSEEK_API_KEY;
   if (!key) {
-    return res.status(500).json({ error: "Falta ANTHROPIC_API_KEY en el entorno" });
+    return res.status(500).json({ error: "Falta DEEPSEEK_API_KEY en el entorno" });
   }
 
   const { tipo, datos } = req.body || {};
@@ -63,39 +67,40 @@ export default async function handler(req, res) {
   }
 
   try {
-    const headers = {
-      "Content-Type": "application/json",
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-    };
-
-    // Las API keys ligadas a identidad exigen declarar en que workspace
-    // actua el request. Una key normal no lo necesita y el header se omite.
-    const workspace = process.env.ANTHROPIC_WORKSPACE_ID;
-    if (workspace) headers["anthropic-workspace-id"] = workspace;
-
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
+    const r = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+      },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1500,
+        model: MODELO,
+        // v4-pro razona antes de responder y ese razonamiento consume tokens
+        // del mismo presupuesto, asi que el techo va holgado para que el JSON
+        // no salga cortado a la mitad.
+        max_tokens: 4000,
         messages: [{ role: "user", content: armar(datos) }],
       }),
     });
 
     if (!r.ok) {
       const detalle = await r.text();
-      console.error(`Anthropic respondio ${r.status}: ${detalle}`);
-      return res.status(502).json({ error: "Error de la API de Anthropic", detalle });
+      console.error(`DeepSeek respondio ${r.status}: ${detalle}`);
+      return res.status(502).json({ error: "Error de la API de DeepSeek", detalle });
     }
 
     const data = await r.json();
-    const texto = data.content
-      .map((i) => (i.type === "text" ? i.text : ""))
-      .join("")
+
+    // Formato OpenAI. En los modelos que razonan el texto util viene en
+    // content; reasoning_content trae el razonamiento y no nos interesa.
+    const texto = (data.choices?.[0]?.message?.content || "")
       .replace(/```json|```/g, "")
       .trim();
+
+    if (!texto) {
+      console.error("DeepSeek no devolvio contenido:", JSON.stringify(data));
+      return res.status(502).json({ error: "DeepSeek no devolvió contenido" });
+    }
 
     return res.status(200).json(JSON.parse(texto));
   } catch (e) {

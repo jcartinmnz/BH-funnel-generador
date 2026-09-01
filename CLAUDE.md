@@ -28,7 +28,7 @@ src/
   lib/storage.js           persistencia del historial
   components/              UI dividida por sección
 api/
-  generar.js               función serverless: habla con la API de Anthropic
+  generar.js               función serverless: habla con la API de DeepSeek
 ```
 
 ## Reglas del proyecto
@@ -39,7 +39,7 @@ api/
    ROI", esa es la respuesta incorrecta.
 
 2. **La API key jamás toca el navegador.** Solo se lee en `api/generar.js`
-   vía `process.env.ANTHROPIC_API_KEY`. Si aparece en `src/`, es un bug de
+   vía `process.env.DEEPSEEK_API_KEY`. Si aparece en `src/`, es un bug de
    seguridad.
 
 3. **Márgenes reales, no inventados.** Los valores de `catalogo.js` vienen de
@@ -61,7 +61,7 @@ npm run dev        # http://localhost:5173
 npm run build
 ```
 
-Para desarrollo local necesitás `.env` con `ANTHROPIC_API_KEY`. Copiá
+Para desarrollo local necesitás `.env` con `DEEPSEEK_API_KEY`. Copiá
 `.env.example`. La función de `api/` corre en Vercel; en local usá
 `vercel dev` si querés probar la generación de punta a punta.
 
