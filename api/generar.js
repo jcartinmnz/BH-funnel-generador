@@ -26,7 +26,10 @@ FUNNEL A GENERAR:
 `;
 }
 
-const MODELO = "deepseek-v4-pro";
+// v4-pro razona antes de responder y es el mas lento. Si las generaciones
+// se pasan del limite de tiempo de la funcion, poner DEEPSEEK_MODEL en
+// deepseek-v4-flash desde Vercel: no requiere tocar codigo.
+const MODELO = process.env.DEEPSEEK_MODEL || "deepseek-v4-pro";
 
 const PROMPTS = {
   contenido: (d) => `${contexto(d)}

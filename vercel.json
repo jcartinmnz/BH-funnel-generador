@@ -2,6 +2,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/generar.js": { "maxDuration": 30 }
+    "api/generar.js": { "maxDuration": 60 }
   }
 }
